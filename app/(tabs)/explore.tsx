@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Dislike, FilterEdit, Flag, Like1, Send2 } from "iconsax-react-nativejs";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
+import { Switch } from "react-native-gesture-handler";
 
 interface Notice {
   id: number;
   message: string;
-  type: "success" | "error" | "info";
+  type: "School Admin" | "Student" | "Lecturer" | "Class Rep";
   user: {
     id: number;
     name: string;
     profile_photo_url?: string | null;
-    user_type: string;
+    location_type: string;
   };
   school_name: string;
   created_at: string;
@@ -31,12 +33,12 @@ const notices: Notice[] = [
   {
     id: 1,
     message: "School assembly will hold tomorrow by 8 AM. All students must attend.",
-    type: "info",
+    type: "School Admin",
     user: {
       id: 11,
       name: "Mrs. Adeola Johnson",
       profile_photo_url: "https://picsum.photos/seed/user1/200/300",
-      user_type: "teacher"
+      location_type: "Lagos State Polytechnic"
     },
     school_name: "Bright Future Academy",
     created_at: "2025-01-15T09:24:00Z",
@@ -56,12 +58,12 @@ const notices: Notice[] = [
   {
     id: 2,
     message: "Congratulations to all students who participated in the Inter-House Sports competition!",
-    type: "success",
+    type: "Class Rep",
     user: {
       id: 22,
       name: "Coach Emmanuel Udo",
       profile_photo_url: "https://picsum.photos/seed/user2/200/300",
-      user_type: "staff"
+      location_type: "staff"
     },
     school_name: "New Vision College",
     created_at: "2025-02-03T14:10:00Z",
@@ -81,12 +83,12 @@ const notices: Notice[] = [
   {
     id: 3,
     message: "There will be a PTA meeting this Friday. Parents are expected to attend.",
-    type: "info",
+    type: "Student",
     user: {
       id: 33,
       name: "Principal Okon",
       profile_photo_url: "https://picsum.photos/seed/user3/200/300",
-      user_type: "admin"
+      location_type: "admin"
     },
     school_name: "Unity International School",
     created_at: "2025-01-28T11:55:00Z",
@@ -106,12 +108,12 @@ const notices: Notice[] = [
   {
     id: 4,
     message: "Mid-term exams start next week. Make sure to complete revisions.",
-    type: "error",
+    type: "Lecturer",
     user: {
       id: 44,
       name: "Mr. David Akpan",
       profile_photo_url: null,
-      user_type: "teacher"
+      location_type: "teacher"
     },
     school_name: "Golden Heights School",
     created_at: "2025-02-10T08:00:00Z",
@@ -131,12 +133,12 @@ const notices: Notice[] = [
   {
     id: 5,
     message: "New hostel rules have been released. Students should check the notice board.",
-    type: "info",
+    type: "School Admin",
     user: {
       id: 55,
       name: "Hostel Supervisor Grace",
       profile_photo_url: "https://picsum.photos/seed/user5/200/300",
-      user_type: "staff"
+      location_type: "staff"
     },
     school_name: "Crestwood Boarding School",
     created_at: "2025-02-20T17:40:00Z",
@@ -160,6 +162,41 @@ const notices: Notice[] = [
 // ----------------------
 
 const NoticeBoard = () => {
+  const [filterVisible, setFilterVisible] = useState(false);
+
+  /**
+   * Formats a date as a relative time string (e.g., "5 minutes ago").
+   *
+   * @param {string | Date} date The date to format.
+   * @returns {string} The formatted relative time string.
+   */
+ const  formatDistanceToNow = (date: string | Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
+
+    const intervals: { [key: string]: number } = {
+      year: 31536000,
+      month: 2592000,
+      week: 604800,
+      day: 86400,
+      hour: 3600,
+      minute: 60,
+      second: 1,
+    };
+
+    for (const interval in intervals) {
+      const intervalInSeconds = intervals[interval];
+      const count = Math.floor(diffInSeconds / intervalInSeconds);
+      if (count >= 1) {
+        return `${count} ${interval}${count !== 1 ? 's' : ''} ago`;
+      }
+    }
+
+    return 'just now';
+  }
+
+
+
   return (
     <ScrollView style={styles.container}>
       {/* Add Button */}
@@ -176,11 +213,12 @@ const NoticeBoard = () => {
       <View style={styles.header}>
         <Text style={styles.title}>Notice Board</Text>
         <View style={styles.filterButton}>
-          <TouchableOpacity>
+          <TouchableOpacity  onPress={() => setFilterVisible(true)}>
             <FilterEdit size={24} variant="Linear" color="#697689"/>
           </TouchableOpacity>
         </View>
       </View>
+      
 
       {/* DYNAMICALLY RENDER NOTICES */}
       {notices.map((item) => (
@@ -197,10 +235,12 @@ const NoticeBoard = () => {
             />
 
             <View style={{ marginLeft: 10 }}>
-              <Text style={styles.name}>{item.user.name}</Text>
+              <View style={styles.nameTime}>
+                <Text style={styles.name}>{item.user.name}</Text>
+                <Text style={styles.time}> • {formatDistanceToNow(item.created_at)}</Text>
+              </View>
               <Text style={styles.time}>
-                {new Date(item.created_at).toDateString()} ·{" "}
-                {item.user.user_type}
+                {item.user.location_type}
               </Text>
             </View>
 
@@ -250,8 +290,66 @@ const NoticeBoard = () => {
         </View>
       ))}
     </ScrollView>
+
+            {/* FILTER POPUP */}
+    
+    <Modal
+      visible={filterVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setFilterVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+
+          {/* HEADER */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setFilterVisible(false)}>
+              <Ionicons name="close" size={22} color="#000" />
+            </TouchableOpacity>
+
+            <Text style={styles.modalTitle}>Filter by</Text>
+
+            <TouchableOpacity>
+              <Text style={styles.clearText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* TOGGLE */}
+          <View style={styles.toggleRow}>
+            <View>
+              <Text style={styles.toggleLabel}>For you</Text>
+              <Text style={styles.toggleSubText}>
+                Based on your school, department, and class
+              </Text>
+            </View>
+            <Switch />
+          </View>
+
+          {/* OPTIONS */}
+          {["School", "Faculty", "Department", "Class"].map((item, index) => (
+            <TouchableOpacity key={index} style={styles.optionRow}>
+              <Text style={styles.optionText}>{item}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#333" />
+            </TouchableOpacity>
+          ))}
+
+          {/* APPLY BUTTON */}
+          <TouchableOpacity style={styles.applyBtn}>
+            <Text style={styles.applyBtnText}>Apply</Text>
+          </TouchableOpacity>
+
+        </View>
+      </View>
+    </Modal>
+
+
   );
 };
+
+
+
+  
 
 export default NoticeBoard;
 
@@ -281,9 +379,9 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 20,
+    borderRadius: 24,
+    padding: 9,
+    marginBottom: 32,
     elevation: 2,
   },
 
@@ -293,31 +391,33 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     borderRadius: 20,
   },
 
   name: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
   },
 
   time: {
     fontSize: 12,
     color: "#777",
+    marginTop: 3,
+   
   },
 
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
     position: "absolute",
     right: 0,
   },
 
   badgeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
   },
 
@@ -343,7 +443,6 @@ const styles = StyleSheet.create({
   actionItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
   },
 
   actionText: {
@@ -380,6 +479,87 @@ const styles = StyleSheet.create({
   },
 
   actionItems: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  nameTime: {
     flexDirection: 'row'
-  }
+  },
+
+  modalOverlay: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.3)",
+  justifyContent: "flex-end",
+},
+
+modalContent: {
+  backgroundColor: "#fff",
+  padding: 20,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  height: "65%",
+},
+
+modalHeader: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+},
+
+modalTitle: {
+  fontSize: 18,
+  fontWeight: "700",
+},
+
+clearText: {
+  fontSize: 14,
+  fontWeight: "500",
+  color: "#6A0DFF",
+},
+
+toggleRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginVertical: 20,
+},
+
+toggleLabel: {
+  fontSize: 16,
+  fontWeight: "600",
+},
+
+toggleSubText: {
+  fontSize: 12,
+  color: "#777",
+},
+
+optionRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  paddingVertical: 14,
+  borderBottomColor: "#eee",
+  borderBottomWidth: 1,
+},
+
+optionText: {
+  fontSize: 15,
+  fontWeight: "500",
+},
+
+applyBtn: {
+  backgroundColor: "#6A0DFF",
+  paddingVertical: 14,
+  borderRadius: 10,
+  marginTop: 30,
+},
+
+applyBtnText: {
+  textAlign: "center",
+  color: "#fff",
+  fontSize: 16,
+  fontWeight: "700",
+},
+
 });
